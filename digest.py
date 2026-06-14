@@ -41,6 +41,9 @@ UA_MONTHS = ["січня", "лютого", "березня", "квітня", "т
 DATE_UA = f"{NOW.day} {UA_MONTHS[NOW.month - 1]} {NOW.year}"
 
 
+_USAGE = {"in": 0, "out": 0, "searches": 0}
+
+
 def claude_text(model, prompt, use_search):
     client = anthropic.Anthropic()
     messages = [{"role": "user", "content": prompt}]
@@ -52,6 +55,14 @@ def claude_text(model, prompt, use_search):
             kwargs["tools"] = tools
         # thinking НЕ вмикаємо: для пошуку+JSON воно лише з'їдає бюджет max_tokens
         resp = client.messages.create(**kwargs)
+        try:
+            _USAGE["in"] += resp.usage.input_tokens
+            _USAGE["out"] += resp.usage.output_tokens
+            _stu = getattr(resp.usage, "server_tool_use", None)
+            if _stu and getattr(_stu, "web_search_requests", None):
+                _USAGE["searches"] += _stu.web_search_requests
+        except Exception:
+            pass
         chunks.append("".join(b.text for b in resp.content if b.type == "text"))
         if resp.stop_reason == "pause_turn":
             messages.append({"role": "assistant", "content": resp.content})
@@ -171,6 +182,8 @@ if __name__ == "__main__":
     alive_urls = {i["url"] for i in cands}
     final = [i for i in final if i.get("url") in alive_urls] or cands[:10]
     print(f"      фінал: {len(final)}")
+    _c = _USAGE["in"] / 1e6 * 3 + _USAGE["out"] / 1e6 * 15 + _USAGE["searches"] * 0.01
+    print(f"[usage] input={_USAGE['in']} output={_USAGE['out']} searches={_USAGE['searches']}  ~${_c:.3f}/run (Sonnet $3/$15 + $0.01/search)")
 
     if len(final) < MIN_ITEMS:
         print(f"[skip] Замало надійних новин ({len(final)} < {MIN_ITEMS}) — пропускаю день.")
