@@ -1,0 +1,23 @@
+name: Zakarpattia afisha
+
+on:
+  schedule:
+    - cron: "0 14 * * 5"   # пʼятниця 17:00 Київ (літо, UTC+3)
+    - cron: "0 15 * * 5"   # пʼятниця 17:00 Київ (зима, UTC+2)
+  workflow_dispatch:
+
+jobs:
+  afisha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python afisha.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CLAUDE_MODEL: claude-haiku-4-5
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}

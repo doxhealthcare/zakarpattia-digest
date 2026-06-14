@@ -1,0 +1,25 @@
+name: Zakarpattia digest
+
+on:
+  schedule:
+    # GitHub cron — всегда в UTC. 19:00 по Киеву:
+    - cron: "0 16 * * *"   # лето (EEST, UTC+3)
+    - cron: "0 17 * * *"   # зима (EET,  UTC+2)
+    # Скрипт сам постит только когда в Киеве 19:xx, второй запуск выходит "пустым".
+  workflow_dispatch:        # кнопка "Run workflow" для теста в любой момент
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python digest.py
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CLAUDE_MODEL: claude-haiku-4-5   # самая дешёвая (~$4-5/мес); для качества: claude-sonnet-4-6 или claude-opus-4-8
+          FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
