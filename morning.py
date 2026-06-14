@@ -168,7 +168,6 @@ def build():
         print("weather failed:", e)
     try:
         f = fuel_brsm()
-        print(f"  бензин БРСМ: {f}")
         for k in ("a95", "dp", "gas"):
             if f.get(k):
                 new[k] = f[k]
@@ -207,7 +206,6 @@ def tg_send(text):
 
 if __name__ == "__main__":
     text = build()
-    print("----- POST -----\n" + text + "\n----------------")
     if not tg_send(text):
         sys.exit("Telegram error — ранковий пост не опубліковано.")
     print("OK ✅")
