@@ -43,13 +43,22 @@ DATE_UA = f"{NOW.day} {UA_MONTHS[NOW.month - 1]} {NOW.year}"
 
 def claude_text(model, prompt, use_search):
     client = anthropic.Anthropic()
-    kwargs = dict(model=model, max_tokens=4000, messages=[{"role": "user", "content": prompt}])
-    if use_search:
-        kwargs["tools"] = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}]
-    if "haiku" not in model:  # adaptive thinking не підтримується на Haiku
-        kwargs["thinking"] = {"type": "adaptive"}
-    resp = client.messages.create(**kwargs)
-    return "".join(b.text for b in resp.content if b.type == "text")
+    messages = [{"role": "user", "content": prompt}]
+    tools = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}] if use_search else None
+    chunks = []
+    for _ in range(8):  # дочитуємо pause_turn (серверний цикл web_search)
+        kwargs = dict(model=model, max_tokens=4000, messages=messages)
+        if tools:
+            kwargs["tools"] = tools
+        if "haiku" not in model:  # adaptive thinking не підтримується на Haiku
+            kwargs["thinking"] = {"type": "adaptive"}
+        resp = client.messages.create(**kwargs)
+        chunks.append("".join(b.text for b in resp.content if b.type == "text"))
+        if resp.stop_reason == "pause_turn":
+            messages.append({"role": "assistant", "content": resp.content})
+            continue
+        break
+    return "".join(chunks)
 
 
 def extract_json(text):
@@ -92,6 +101,7 @@ goloskarpat.info, zakarpattya.net.ua, mukachevo.net, pmg.ua, transkarpatia.net, 
 
 def gen_candidates():
     txt = claude_text(MODEL, GEN_PROMPT, use_search=True)
+    print(f"      (відповідь моделі: {len(txt)} символів)")
     items = extract_json(txt)
     return [i for i in items if isinstance(i, dict) and str(i.get("url", "")).startswith("http")]
 

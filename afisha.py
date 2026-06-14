@@ -56,13 +56,22 @@ def extract_json(text):
 
 
 def gen():
-    kwargs = dict(model=MODEL, max_tokens=3000,
-                  tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}],
-                  messages=[{"role": "user", "content": PROMPT}])
-    if "haiku" not in MODEL:
-        kwargs["thinking"] = {"type": "adaptive"}
-    resp = anthropic.Anthropic().messages.create(**kwargs)
-    txt = "".join(b.text for b in resp.content if b.type == "text")
+    client = anthropic.Anthropic()
+    messages = [{"role": "user", "content": PROMPT}]
+    tools = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}]
+    chunks = []
+    for _ in range(8):  # дочитуємо pause_turn (серверний цикл web_search)
+        kwargs = dict(model=MODEL, max_tokens=3000, messages=messages, tools=tools)
+        if "haiku" not in MODEL:
+            kwargs["thinking"] = {"type": "adaptive"}
+        resp = client.messages.create(**kwargs)
+        chunks.append("".join(b.text for b in resp.content if b.type == "text"))
+        if resp.stop_reason == "pause_turn":
+            messages.append({"role": "assistant", "content": resp.content})
+            continue
+        break
+    txt = "".join(chunks)
+    print(f"відповідь моделі: {len(txt)} символів")
     items = extract_json(txt)
     return [i for i in items if isinstance(i, dict) and str(i.get("url", "")).startswith("http")]
 
