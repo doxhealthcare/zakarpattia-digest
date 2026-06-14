@@ -16,8 +16,9 @@ import zoneinfo
 
 KYIV = zoneinfo.ZoneInfo("Europe/Kyiv")
 NOW = datetime.datetime.now(KYIV)
-if os.environ.get("FORCE_RUN") != "1" and NOW.hour != 9:
-    print(f"Київський час {NOW:%H:%M} != 9:xx — пропускаю запуск.")
+_mins = NOW.hour * 60 + NOW.minute  # цільове вікно ~08:45 Київ (з допуском на затримку cron)
+if os.environ.get("FORCE_RUN") != "1" and not (520 <= _mins < 575):
+    print(f"Київський час {NOW:%H:%M} поза вікном ~08:45 — пропускаю запуск.")
     sys.exit(0)
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]

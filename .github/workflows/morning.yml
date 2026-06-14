@@ -2,8 +2,8 @@ name: Zakarpattia morning
 
 on:
   schedule:
-    - cron: "0 6 * * *"   # 09:00 Київ (літо, UTC+3)
-    - cron: "0 7 * * *"   # 09:00 Київ (зима, UTC+2)
+    - cron: "45 5 * * *"   # 08:45 Київ (літо, UTC+3)
+    - cron: "45 6 * * *"   # 08:45 Київ (зима, UTC+2)
   workflow_dispatch:
 
 jobs:
