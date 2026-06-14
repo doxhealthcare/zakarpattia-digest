@@ -19,5 +19,5 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CLAUDE_MODEL: claude-sonnet-4-6
+          CLAUDE_MODEL: claude-haiku-4-5
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
