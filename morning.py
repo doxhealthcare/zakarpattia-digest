@@ -172,15 +172,16 @@ def build():
         for k in ("a95", "dp", "gas"):
             if f.get(k):
                 new[k] = f[k]
-        parts = []
+        fuel_lines = []
         if f.get("a95"):
-            parts.append(f"А-95 {f['a95']}{delta(f['a95'], prev.get('a95'))}")
+            fuel_lines.append(f"🚗 А-95: {f['a95']}{delta(f['a95'], prev.get('a95'))}")
         if f.get("dp"):
-            parts.append(f"ДП {f['dp']}{delta(f['dp'], prev.get('dp'))}")
+            fuel_lines.append(f"🚛 ДП: {f['dp']}{delta(f['dp'], prev.get('dp'))}")
         if f.get("gas"):
-            parts.append(f"Газ {f['gas']}{delta(f['gas'], prev.get('gas'))}")
-        if parts:
-            lines.append("⛽ <b>Пальне БРСМ</b> (грн/л): " + " · ".join(parts))
+            fuel_lines.append(f"💨 Газ: {f['gas']}{delta(f['gas'], prev.get('gas'))}")
+        if fuel_lines:
+            lines.append("⛽ <b>Пальне БРСМ</b> (грн/л):")
+            lines.extend(fuel_lines)
             lines.append("")
     except Exception as e:
         print("fuel failed:", e)
@@ -206,6 +207,7 @@ def tg_send(text):
 
 if __name__ == "__main__":
     text = build()
+    print("----- POST -----\n" + text + "\n----------------")
     if not tg_send(text):
         sys.exit("Telegram error — ранковий пост не опубліковано.")
     print("OK ✅")
