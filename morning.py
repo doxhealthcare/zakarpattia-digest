@@ -185,7 +185,7 @@ def build():
             lines.append("")
     except Exception as e:
         print("fuel failed:", e)
-    lines.append("<i>Джерела: ПриватБанк · Open-Meteo · БРСМ</i>")
+    lines.append("<i>🔺🔻 — зміна з учора · Джерела: ПриватБанк · Open-Meteo · БРСМ</i>")
     if new:
         try:
             save_state({**prev, **new})
