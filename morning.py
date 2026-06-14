@@ -98,15 +98,53 @@ def fuel_brsm():
     return {"a95": after("Бензин А-95"), "dp": after("Дизельне паливо"), "gas": after("Газ авто")}
 
 
+STATE_FILE = "state/morning_state.json"
+
+
+def load_state():
+    try:
+        with open(STATE_FILE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except Exception:
+        return {}
+
+
+def save_state(d):
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    with open(STATE_FILE, "w", encoding="utf-8") as fh:
+        json.dump(d, fh, ensure_ascii=False)
+
+
+def delta(cur, prev):
+    """' 🔺+0.10' / ' 🔻-0.05' / '' — зміна відносно вчора."""
+    if not cur or not prev:
+        return ""
+    try:
+        d = round(float(cur) - float(prev), 2)
+    except Exception:
+        return ""
+    if d > 0.001:
+        return f" 🔺+{d:.2f}"
+    if d < -0.001:
+        return f" 🔻{d:.2f}"
+    return ""
+
+
 def build():
+    prev = load_state()
+    new = {}
     lines = ["🌅 <b>Доброго ранку, Закарпаття!</b>", f"🗓 {DATE_UA}", ""]
     try:
         r = privat_rates()
         lines.append("💵 <b>Курс ПриватБанку</b> (готівка, грн — купівля / продаж):")
         if "USD" in r:
-            lines.append(f"🇺🇸 USD: {r['USD'][0]:.2f} / {r['USD'][1]:.2f}")
+            ub, us = f"{r['USD'][0]:.2f}", f"{r['USD'][1]:.2f}"
+            new["usd_buy"], new["usd_sale"] = ub, us
+            lines.append(f"🇺🇸 USD: {ub} / {us}{delta(us, prev.get('usd_sale'))}")
         if "EUR" in r:
-            lines.append(f"🇪🇺 EUR: {r['EUR'][0]:.2f} / {r['EUR'][1]:.2f}")
+            eb, es = f"{r['EUR'][0]:.2f}", f"{r['EUR'][1]:.2f}"
+            new["eur_buy"], new["eur_sale"] = eb, es
+            lines.append(f"🇪🇺 EUR: {eb} / {es}{delta(es, prev.get('eur_sale'))}")
         lines.append("")
     except Exception as e:
         print("rates failed:", e)
@@ -131,19 +169,27 @@ def build():
     try:
         f = fuel_brsm()
         print(f"  бензин БРСМ: {f}")
+        for k in ("a95", "dp", "gas"):
+            if f.get(k):
+                new[k] = f[k]
         parts = []
         if f.get("a95"):
-            parts.append(f"А-95 {f['a95']}")
+            parts.append(f"А-95 {f['a95']}{delta(f['a95'], prev.get('a95'))}")
         if f.get("dp"):
-            parts.append(f"ДП {f['dp']}")
+            parts.append(f"ДП {f['dp']}{delta(f['dp'], prev.get('dp'))}")
         if f.get("gas"):
-            parts.append(f"Газ {f['gas']}")
+            parts.append(f"Газ {f['gas']}{delta(f['gas'], prev.get('gas'))}")
         if parts:
             lines.append("⛽ <b>Пальне БРСМ</b> (грн/л): " + " · ".join(parts))
             lines.append("")
     except Exception as e:
         print("fuel failed:", e)
-    lines.append("🤖 <i>Курс — ПриватБанк, погода — Open-Meteo, пальне — БРСМ</i>")
+    lines.append("🤖 <i>🔺🔻 — зміна з учора · курс ПриватБанк · погода Open-Meteo · пальне БРСМ</i>")
+    if new:
+        try:
+            save_state({**prev, **new})
+        except Exception as e:
+            print("state save failed:", e)
     return "\n".join(lines)
 
 
@@ -160,6 +206,7 @@ def tg_send(text):
 
 if __name__ == "__main__":
     text = build()
+    print("----- POST -----\n" + text + "\n----------------")
     if not tg_send(text):
         sys.exit("Telegram error — ранковий пост не опубліковано.")
     print("OK ✅")
