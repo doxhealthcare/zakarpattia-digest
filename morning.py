@@ -22,7 +22,6 @@ if os.environ.get("FORCE_RUN") != "1" and NOW.hour != 9:
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = os.environ.get("TELEGRAM_CHANNEL", "@zakarpattianews")
-FUEL_MODEL = os.environ.get("FUEL_MODEL", "claude-haiku-4-5")
 
 UA_MONTHS = ["січня", "лютого", "березня", "квітня", "травня", "червня",
              "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
@@ -85,22 +84,18 @@ def weather():
 
 
 def fuel_brsm():
-    """Сьогоднішні ціни БРСМ через Haiku+web_search. Повертає {} при будь-якій помилці."""
-    import anthropic
-    client = anthropic.Anthropic()
-    prompt = ("С помощью web_search найди СЕГОДНЯШНИЕ цены на топливо сети АЗС «БРСМ-Нафта» в Украине. "
-              "Источники: index.minfin.com.ua/ua/markets/fuel/tm/brsmnafta/, auto.ria.com/uk/toplivo/brsm-nafta/, "
-              "agrarii-razom.com.ua/fuel/azs/brsm-nafta. Бери средние/актуальные цены сети. "
-              "Верни СТРОГО JSON между маркерами, без иного текста (числа грн/л как строки; если нет — пустая строка):\n"
-              '===J===\n{"a95":"00.00","dp":"00.00","gas":"00.00"}\n===J===')
-    resp = client.messages.create(
-        model=FUEL_MODEL, max_tokens=600,
-        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 3}],
-        messages=[{"role": "user", "content": prompt}],
-    )
-    txt = "".join(b.text for b in resp.content if b.type == "text")
-    m = re.search(r"\{.*\}", txt, re.DOTALL)
-    return json.loads(m.group(0)) if m else {}
+    """Ціни БРСМ із index.minfin (безкоштовно, без API). {} при будь-якій помилці."""
+    req = urllib.request.Request(
+        "https://index.minfin.com.ua/ua/markets/fuel/tm/brsmnafta/",
+        headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+    with urllib.request.urlopen(req, timeout=25) as r:
+        page = r.read().decode("utf-8", "replace")
+
+    def after(label):  # перше число NN,NN після мітки
+        m = re.search(re.escape(label) + r".*?(\d{2,3}[.,]\d{2})", page, re.DOTALL)
+        return m.group(1).replace(",", ".") if m else ""
+
+    return {"a95": after("Бензин А-95"), "dp": after("Дизельне паливо"), "gas": after("Газ авто")}
 
 
 def build():
@@ -135,6 +130,7 @@ def build():
         print("weather failed:", e)
     try:
         f = fuel_brsm()
+        print(f"  бензин БРСМ: {f}")
         parts = []
         if f.get("a95"):
             parts.append(f"А-95 {f['a95']}")

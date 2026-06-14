@@ -14,9 +14,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install anthropic
+      # без pip — morning.py тепер лише стандартна бібліотека (курс/погода/бензин — безкоштовні джерела)
       - run: python morning.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
