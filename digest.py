@@ -47,11 +47,10 @@ def claude_text(model, prompt, use_search):
     tools = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}] if use_search else None
     chunks = []
     for _ in range(8):  # дочитуємо pause_turn (серверний цикл web_search)
-        kwargs = dict(model=model, max_tokens=4000, messages=messages)
+        kwargs = dict(model=model, max_tokens=8000, messages=messages)
         if tools:
             kwargs["tools"] = tools
-        if "haiku" not in model:  # adaptive thinking не підтримується на Haiku
-            kwargs["thinking"] = {"type": "adaptive"}
+        # thinking НЕ вмикаємо: для пошуку+JSON воно лише з'їдає бюджет max_tokens
         resp = client.messages.create(**kwargs)
         chunks.append("".join(b.text for b in resp.content if b.type == "text"))
         if resp.stop_reason == "pause_turn":

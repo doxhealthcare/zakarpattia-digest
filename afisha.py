@@ -61,9 +61,8 @@ def gen():
     tools = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}]
     chunks = []
     for _ in range(8):  # дочитуємо pause_turn (серверний цикл web_search)
-        kwargs = dict(model=MODEL, max_tokens=3000, messages=messages, tools=tools)
-        if "haiku" not in MODEL:
-            kwargs["thinking"] = {"type": "adaptive"}
+        kwargs = dict(model=MODEL, max_tokens=6000, messages=messages, tools=tools)
+        # thinking НЕ вмикаємо: для пошуку+JSON воно лише з'їдає бюджет max_tokens
         resp = client.messages.create(**kwargs)
         chunks.append("".join(b.text for b in resp.content if b.type == "text"))
         if resp.stop_reason == "pause_turn":
