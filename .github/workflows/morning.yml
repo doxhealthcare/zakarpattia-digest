@@ -1,30 +1,17 @@
 name: Zakarpattia morning
 
 on:
-  schedule:
-    - cron: "45 5 * * *"   # 08:45 Київ (літо, UTC+3)
-    - cron: "45 6 * * *"   # 08:45 Київ (зима, UTC+2)
-  workflow_dispatch:
+  workflow_dispatch:        # manual only; scheduled runs disabled (posting runs from server 104.248.35.90)
 
 jobs:
   morning:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # без pip — morning.py тепер лише стандартна бібліотека (курс/погода/бензин — безкоштовні джерела)
       - run: python morning.py
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
-      - name: Save yesterday state
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state/morning_state.json || true
-          git commit -m "morning state [skip ci]" || echo "no changes"
-          git push || echo "nothing to push"

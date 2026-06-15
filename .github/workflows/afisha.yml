@@ -1,10 +1,7 @@
 name: Zakarpattia afisha
 
 on:
-  schedule:
-    - cron: "0 14 * * 5"   # пʼятниця 17:00 Київ (літо, UTC+3)
-    - cron: "0 15 * * 5"   # пʼятниця 17:00 Київ (зима, UTC+2)
-  workflow_dispatch:
+  workflow_dispatch:        # manual only; scheduled runs disabled (posting runs from server 104.248.35.90)
 
 jobs:
   afisha:
