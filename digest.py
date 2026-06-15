@@ -21,9 +21,21 @@ import anthropic
 
 KYIV = zoneinfo.ZoneInfo("Europe/Kyiv")
 NOW = datetime.datetime.now(KYIV)
-if os.environ.get("FORCE_RUN") != "1" and NOW.hour != 19:
-    print(f"Київський час {NOW:%H:%M} != 19:xx — пропускаю запуск.")
-    sys.exit(0)
+STATE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "state", "digest_last.txt")
+TODAY = NOW.strftime("%Y-%m-%d")
+# Ціль — 19:00 Київ. GitHub cron нерідко спізнюється (іноді на годину+),
+# тож публікуємо при ПЕРШОМУ запуску від 19:00 і максимум один раз на день.
+if os.environ.get("FORCE_RUN") != "1":
+    if NOW.hour < 19:
+        print(f"Київський час {NOW:%H:%M} — ще рано (ціль 19:00), пропускаю запуск.")
+        sys.exit(0)
+    try:
+        with open(STATE_FILE) as _sf:
+            if _sf.read().strip() == TODAY:
+                print(f"Сьогодні ({TODAY}) дайджест уже виходив — пропускаю.")
+                sys.exit(0)
+    except FileNotFoundError:
+        pass
 
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = os.environ.get("TELEGRAM_CHANNEL", "@zakarpattianews")
@@ -183,4 +195,7 @@ if __name__ == "__main__":
     print("[3/3] Публікую…")
     if not tg_send(render(final)):
         sys.exit("Telegram error — пост не опубліковано.")
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    with open(STATE_FILE, "w") as _sf:
+        _sf.write(TODAY)  # позначаємо, що сьогодні вже постили (захист від повторів)
     print("OK ✅")
