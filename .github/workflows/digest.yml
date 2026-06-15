@@ -1,14 +1,9 @@
 name: Zakarpattia digest
 
 on:
-  schedule:
-    # GitHub cron — всегда в UTC. 19:00 по Киеву:
-    - cron: "0 16 * * *"   # лето (EEST, UTC+3)
-    - cron: "0 17 * * *"   # зима (EET,  UTC+2)
-    # Скрипт сам постит только когда в Киеве 19:xx, второй запуск выходит "пустым".
-  workflow_dispatch:        # кнопка "Run workflow" для теста в любой момент
+  workflow_dispatch:        # manual only; scheduled runs disabled (posting runs from server 104.248.35.90)
 
-jobs:
+jobs:Disable scheduled runs - posting moved to server cron
   digest:
     runs-on: ubuntu-latest
     steps:
@@ -21,5 +16,5 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CLAUDE_MODEL: claude-haiku-4-5   # RSS дає новини безкоштовно, Haiku лише відбирає → копійки
+          CLAUDE_MODEL: claude-haiku-4-5
           FORCE_RUN: ${{ github.event_name == 'workflow_dispatch' && '1' || '' }}
