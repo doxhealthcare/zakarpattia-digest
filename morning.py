@@ -116,8 +116,8 @@ def save_state(d):
         json.dump(d, fh, ensure_ascii=False)
 
 
-def delta(cur, prev):
-    """' 🔺+0.10' / ' 🔻-0.05' / '' — зміна відносно вчора."""
+def delta(cur, prev, zero=""):
+    """' 🔺+0.10' / ' 🔻-0.05' / zero / '' — зміна відносно вчора."""
     if not cur or not prev:
         return ""
     try:
@@ -128,7 +128,7 @@ def delta(cur, prev):
         return f" 🔺+{d:.2f}"
     if d < -0.001:
         return f" 🔻{d:.2f}"
-    return ""
+    return zero
 
 
 def build():
@@ -174,11 +174,11 @@ def build():
                 new[k] = f[k]
         fuel_lines = []
         if f.get("a95"):
-            fuel_lines.append(f"🚗 А-95: {f['a95']}{delta(f['a95'], prev.get('a95'))}")
+            fuel_lines.append(f"🚗 А-95: {f['a95']}{delta(f['a95'], prev.get('a95'), zero=' ➖ без змін')}")
         if f.get("dp"):
-            fuel_lines.append(f"🚛 ДП: {f['dp']}{delta(f['dp'], prev.get('dp'))}")
+            fuel_lines.append(f"🚛 ДП: {f['dp']}{delta(f['dp'], prev.get('dp'), zero=' ➖ без змін')}")
         if f.get("gas"):
-            fuel_lines.append(f"💨 Газ: {f['gas']}{delta(f['gas'], prev.get('gas'))}")
+            fuel_lines.append(f"💨 Газ: {f['gas']}{delta(f['gas'], prev.get('gas'), zero=' ➖ без змін')}")
         if fuel_lines:
             lines.append("⛽ <b>Пальне БРСМ</b> (грн/л):")
             lines.extend(fuel_lines)
